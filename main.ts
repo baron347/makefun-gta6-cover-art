@@ -1,8 +1,8 @@
-// Vice City Cover Maker — entry for make.fun competition gta6-cover-art-01.
-// Node 22+, standard library only. This is the hand-in plumbing: it copies
-// the static app (app/) and the screenshots (screenshots/) from beside this
-// file into the output directory and writes /output/dossier.json, the summary
-// the judge reads, using the vendored make.fun library (vendor/makefun-app.ts).
+// Vice City Cover Maker — hand-in entry for make.fun competition gta6-cover-art-01.
+// Node 22+, standard library only. This file is the plumbing: it copies the
+// static app (app/) and the screenshots (screenshots/) from beside this file
+// into the output directory and writes /output/dossier.json, the summary the
+// judge reads, using the vendored make.fun library (vendor/makefun-app.ts).
 // The app itself is plain static files — app/index.html opens in desktop
 // Chrome and works fully offline, no network request, no build step.
 //
@@ -10,12 +10,13 @@
 // for /output:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 //
-// The cover art itself lives in app/cover.js: a multi-panel GTA-style poster
-// engine (3x3 square grid with a centre title block, portrait title band,
+// The cover art itself lives in app/cover.js: a multi-panel poster engine
+// (3x3 square grid with a centre title block, portrait title band,
 // landscape title strip, solo-photo layout with drawn graphic panels),
-// Vice Sunset / Neon Night / Original grades, bold Anton lettering, and PNG
-// export at 1080x1080, 1080x1350 and 1920x1080. Photos are read on the
-// user's own machine and never leave it.
+// Vice Sunset / Neon Night / Original grades, bold Anton lettering,
+// click-to-select panel cropping + per-panel flip, and PNG export at
+// 1080x1080, 1080x1350 and 1920x1080. Photos are read on the user's own
+// machine and never leave it.
 
 import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

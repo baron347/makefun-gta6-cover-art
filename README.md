@@ -24,8 +24,9 @@ Built for the make.fun competition `gta6-cover-art-01`.
 4. Pick a colour grade — **Vice Sunset** (warm pink/orange),
    **Neon Night** (purple/cyan), or **Original** — and an export size:
    1080×1080, 1080×1350, or 1920×1080.
-5. Crop the hero panel with the focal X / focal Y / zoom sliders, or hit
-   **Shuffle crops** to re-roll the focal point and zoom of **every**
+5. Click any photo panel in the preview to select it, then crop it with
+   the focal X / focal Y / zoom sliders, or flip it with **Flip panel**.
+   Hit **Shuffle crops** to re-roll the focal point and zoom of **every**
    panel at once.
 6. Click **Export PNG** — the cover downloads as a PNG at the exact size
    you picked.

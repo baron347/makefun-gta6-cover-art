@@ -8,8 +8,8 @@
 //
 // Loaded as a classic <script src="cover.js"> so the app works from file://
 // in desktop Chrome (ES modules are blocked from file:// by CORS).
-// Exposes window.ViceCover = { SIZES, GRADES, LAYOUTS, layoutFor, loadImage,
-// gradedCanvas, renderCover, exportPNG }.
+// Exposes window.ViceCover = { SIZES, GRADES, LAYOUTS, layoutFor, cellAt,
+// loadImage, gradedCanvas, renderCover, exportPNG }.
 
 (function (global) {
   'use strict';
@@ -82,6 +82,30 @@
     // Solo-photo square: two drawn graphic cells break the 8x repetition.
     if ((photoCount || 3) < 2) return LAYOUTS.squareSolo;
     return LAYOUTS.square;
+  }
+
+  // Pixel rect of a layout cell on a canvas of W x H (same math as renderCover).
+  function cellRect(cell, W, H) {
+    var gutter = Math.round(W * 0.008);
+    var border = Math.round(W * 0.012);
+    return {
+      x: border + cell.x * (W - border * 2),
+      y: border + cell.y * (H - border * 2),
+      w: cell.w * (W - border * 2) - gutter,
+      h: cell.h * (H - border * 2) - gutter,
+    };
+  }
+
+  // Which layout cell index sits at canvas pixel (px, py)? -1 if none.
+  // Used for click-to-select a panel in the preview.
+  function cellAt(sizeKey, photoCount, px, py) {
+    var dims = SIZES[sizeKey] || SIZES['1080x1080'];
+    var layout = layoutFor(sizeKey, photoCount);
+    for (var i = 0; i < layout.length; i++) {
+      var r = cellRect(layout[i], dims[0], dims[1]);
+      if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) return i;
+    }
+    return -1;
   }
 
   function loadImage(src) {
@@ -284,8 +308,9 @@
   }
 
   // Main render. opts: { photos, caption, sub, grade, sizeKey,
-  //   heroTweaks: {fx, fy, zoom} (first photo cell),
-  //   panelTweaks: [{fx, fy, zoom, flip}] per layout cell (Shuffle fills this) }
+  //   heroTweaks: {fx, fy, zoom} (first photo cell, legacy),
+  //   panelTweaks: [{fx, fy, zoom, flip}] per layout cell (Shuffle + sliders fill this),
+  //   selectedCell: layout index to outline in the PREVIEW only (never exported) }
   function renderCover(canvas, opts) {
     var dims = SIZES[opts.sizeKey] || SIZES['1080x1080'];
     var W = dims[0], H = dims[1];
@@ -297,15 +322,11 @@
     var sub = opts.sub || '';
     var photos = opts.photos && opts.photos.length ? opts.photos : [];
     var layout = layoutFor(opts.sizeKey, photos.length);
-    var gutter = Math.round(W * 0.008); // white gutters between panels
-    var border = Math.round(W * 0.012); // white outer frame
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, W, H);
     layout.forEach(function (cell, cellIdx) {
-      var px = border + cell.x * (W - border * 2);
-      var py = border + cell.y * (H - border * 2);
-      var pw = cell.w * (W - border * 2) - gutter;
-      var ph = cell.h * (H - border * 2) - gutter;
+      var r = cellRect(cell, W, H);
+      var px = r.x, py = r.y, pw = r.w, ph = r.h;
       if (cell.type === 'title') {
         drawTitle(ctx, { x: px / W, y: py / H, w: pw / W, h: ph / H }, W, H, caption, sub);
         return;
@@ -334,6 +355,17 @@
       // is the same path — the graded panel is drawn cover-fit into the cell).
       var gw = Math.min(pw, 900), gh = Math.min(ph, 900);
       var graded = gradedCanvas(img, gw, gh, cellGrade);
+      var fx = cell.fx, fy = cell.fy, zoom = cell.zoom;
+      var tweak = opts.panelTweaks && opts.panelTweaks[cellIdx];
+      if (tweak) {
+        if (typeof tweak.fx === 'number') fx = tweak.fx;
+        if (typeof tweak.fy === 'number') fy = tweak.fy;
+        if (typeof tweak.zoom === 'number') zoom = tweak.zoom;
+        if (tweak.flip) flip = !flip; // user flip toggles on top of the solo auto-flip
+      }
+      if (opts.heroTweaks && cell.photo === 0 && layout.indexOf(cell) === 0) {
+        fx = opts.heroTweaks.fx; fy = opts.heroTweaks.fy; zoom = opts.heroTweaks.zoom;
+      }
       if (flip) {
         var fc = document.createElement('canvas');
         fc.width = graded.width; fc.height = graded.height;
@@ -342,28 +374,36 @@
         fxc.drawImage(graded, 0, 0);
         graded = fc;
       }
-      var fx = cell.fx, fy = cell.fy, zoom = cell.zoom;
-      var tweak = opts.panelTweaks && opts.panelTweaks[cellIdx];
-      if (tweak) {
-        if (typeof tweak.fx === 'number') fx = tweak.fx;
-        if (typeof tweak.fy === 'number') fy = tweak.fy;
-        if (typeof tweak.zoom === 'number') zoom = tweak.zoom;
-      }
-      if (opts.heroTweaks && cell.photo === 0 && layout.indexOf(cell) === 0) {
-        fx = opts.heroTweaks.fx; fy = opts.heroTweaks.fy; zoom = opts.heroTweaks.zoom;
-      }
       drawCoverFit(ctx, graded, px, py, pw, ph, fx, fy, zoom);
       // Comic panel edge.
       ctx.strokeStyle = 'rgba(22,4,43,0.55)';
       ctx.lineWidth = Math.max(1, W * 0.002);
       ctx.strokeRect(px, py, pw, ph);
+      // Preview-only selection outline (exportPNG never passes selectedCell).
+      if (opts.selectedCell === cellIdx) {
+        ctx.strokeStyle = '#ff2d78';
+        ctx.lineWidth = Math.max(3, W * 0.008);
+        ctx.strokeRect(px + 2, py + 2, pw - 4, ph - 4);
+        ctx.fillStyle = '#ff2d78';
+        var tag = 'PANEL ' + (cellIdx + 1);
+        var tagSize = Math.max(14, Math.round(W * 0.022));
+        ctx.font = tagSize + "px 'Archivo Black', sans-serif";
+        var tw = ctx.measureText(tag).width + tagSize * 1.2;
+        ctx.fillRect(px + 2, py + 2, tw, tagSize * 1.7);
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(tag, px + 2 + tagSize * 0.6, py + 2 + tagSize * 0.85);
+      }
     });
     return canvas;
   }
 
   function exportPNG(opts) {
     var c = document.createElement('canvas');
-    renderCover(c, opts);
+    var clean = {};
+    for (var k in opts) if (Object.prototype.hasOwnProperty.call(opts, k)) clean[k] = opts[k];
+    delete clean.selectedCell; // the selection outline is preview-only, never exported
+    renderCover(c, clean);
     return new Promise(function (resolve) {
       c.toBlob(function (b) { resolve(b); }, 'image/png');
     });
@@ -374,6 +414,7 @@
     GRADES: GRADES,
     LAYOUTS: LAYOUTS,
     layoutFor: layoutFor,
+    cellAt: cellAt,
     loadImage: loadImage,
     gradedCanvas: gradedCanvas,
     renderCover: renderCover,

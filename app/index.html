@@ -42,19 +42,22 @@
       <option value="1080x1350">1080 × 1350 (portrait post)</option>
       <option value="1920x1080">1920 × 1080 (wide post)</option>
     </select>
-    <label>Hero panel — focal X <span id="fxv">0.50</span></label>
+    <label id="cropLabel">Selected panel — focal X <span id="fxv">0.50</span></label>
     <input type="range" id="fx" min="0" max="1" step="0.01" value="0.5">
-    <label>Hero panel — focal Y <span id="fyv">0.30</span></label>
+    <label>Selected panel — focal Y <span id="fyv">0.30</span></label>
     <input type="range" id="fy" min="0" max="1" step="0.01" value="0.3">
-    <label>Hero panel — zoom <span id="zv">1.15</span></label>
+    <label>Selected panel — zoom <span id="zv">1.15</span></label>
     <input type="range" id="zoom" min="1" max="2.2" step="0.05" value="1.15">
     <div class="row" style="margin-top:14px">
+      <button id="flipBtn" type="button">Flip panel ↔</button>
       <button id="shuffleBtn" type="button">Shuffle crops</button>
+    </div>
+    <div class="row" style="margin-top:8px">
       <button id="clearBtn" type="button">Clear photos</button>
     </div>
     <button id="exportBtn" type="button">Export PNG</button>
     <div id="status">No photos yet — upload some to build your cover.</div>
-    <p class="hint">Shuffle crops re-rolls the focal point and zoom of <b>every</b> panel, not just the hero. Drag photos onto the preview to add more. Export downloads a PNG at the exact size above.</p>
+    <p class="hint">Click any photo panel in the preview to select it — the sliders and Flip then apply to that panel. Shuffle crops re-rolls the focal point and zoom of <b>every</b> panel. Drag photos onto the preview to add more. Export downloads a PNG at the exact size above.</p>
   </div>
 </div>
 <footer>
@@ -74,21 +77,55 @@
     sub: 'LEONIDA • 2026',
     grade: 'sunset',
     sizeKey: '1080x1080',
-    heroTweaks: { fx: 0.5, fy: 0.3, zoom: 1.15 },
-    panelTweaks: [],     // per layout cell {fx, fy, zoom}; Shuffle fills this
+    selectedCell: 0,     // layout cell index the crop sliders + Flip apply to
+    panelTweaks: [],     // per layout cell {fx, fy, zoom, flip}; Shuffle fills this
   };
   var canvas = $('preview');
 
+  function layout() { return VC.layoutFor(state.sizeKey, state.photos.length); }
+
+  // The tweak object for the selected cell, created from the cell defaults
+  // on first edit so sliders always start from what the panel already shows.
+  function selectedTweak() {
+    var cells = layout();
+    var cell = cells[state.selectedCell];
+    if (!cell || cell.type !== 'photo') return null;
+    if (!state.panelTweaks[state.selectedCell]) {
+      state.panelTweaks[state.selectedCell] = { fx: cell.fx, fy: cell.fy, zoom: cell.zoom, flip: false };
+    }
+    return state.panelTweaks[state.selectedCell];
+  }
+
+  function syncSliders() {
+    var t = selectedTweak();
+    var cells = layout();
+    var cell = cells[state.selectedCell];
+    var fx = t ? t.fx : (cell ? cell.fx : 0.5);
+    var fy = t ? t.fy : (cell ? cell.fy : 0.5);
+    var zoom = t ? t.zoom : (cell ? cell.zoom : 1);
+    $('fx').value = fx; $('fy').value = fy; $('zoom').value = zoom;
+    $('fxv').textContent = (+fx).toFixed(2);
+    $('fyv').textContent = (+fy).toFixed(2);
+    $('zv').textContent = (+zoom).toFixed(2);
+    $('cropLabel').firstChild.textContent = 'Panel ' + (state.selectedCell + 1) + ' — focal X ';
+    $('flipBtn').textContent = (t && t.flip) ? 'Flip panel ↔ (flipped)' : 'Flip panel ↔';
+    var hasPhoto = state.photos.length > 0;
+    $('flipBtn').disabled = !hasPhoto || !t;
+    $('shuffleBtn').disabled = !hasPhoto;
+  }
+
   function render() {
-    $('fxv').textContent = state.heroTweaks.fx.toFixed(2);
-    $('fyv').textContent = state.heroTweaks.fy.toFixed(2);
-    $('zv').textContent = state.heroTweaks.zoom.toFixed(2);
+    syncSliders();
     $('empty').classList.toggle('hidden', state.photos.length > 0);
     $('exportBtn').disabled = state.photos.length === 0;
-    $('shuffleBtn').disabled = state.photos.length === 0;
-    VC.renderCover(canvas, state);
+    var opts = {
+      photos: state.photos, caption: state.caption, sub: state.sub,
+      grade: state.grade, sizeKey: state.sizeKey, panelTweaks: state.panelTweaks,
+      selectedCell: state.photos.length ? state.selectedCell : -1,
+    };
+    VC.renderCover(canvas, opts);
     $('status').textContent = state.photos.length
-      ? 'Rendered ' + state.sizeKey + ' · grade ' + state.grade + ' · ' + state.photos.length + ' photo(s)'
+      ? 'Rendered ' + state.sizeKey + ' · grade ' + state.grade + ' · ' + state.photos.length + ' photo(s) · panel ' + (state.selectedCell + 1) + ' selected'
       : 'No photos yet — upload some to build your cover.';
     renderThumbs();
   }
@@ -112,6 +149,7 @@
         state.photos.splice(i, 1);
         state.photoNames.splice(i, 1);
         state.panelTweaks = [];
+        state.selectedCell = 0;
         render();
       });
       fig.appendChild(thumb);
@@ -123,23 +161,16 @@
 
   // Shuffle crops: re-roll focal point + zoom for EVERY photo panel.
   function shuffleCrops() {
-    var layout = VC.layoutFor(state.sizeKey, state.photos.length);
-    state.panelTweaks = layout.map(function (cell) {
+    var cells = layout();
+    state.panelTweaks = cells.map(function (cell) {
       if (cell.type !== 'photo') return null;
       return {
         fx: 0.2 + Math.random() * 0.6,
         fy: 0.2 + Math.random() * 0.6,
         zoom: 1.0 + Math.random() * 0.9,
+        flip: false,
       };
     });
-    // Keep the hero sliders in sync with the first panel's new crop.
-    var first = state.panelTweaks[0];
-    if (first) {
-      state.heroTweaks = { fx: first.fx, fy: first.fy, zoom: first.zoom };
-      $('fx').value = first.fx;
-      $('fy').value = first.fy;
-      $('zoom').value = first.zoom;
-    }
     render();
   }
 
@@ -153,6 +184,7 @@
       });
     })).then(function () {
       state.panelTweaks = [];
+      state.selectedCell = 0;
       render();
     }).catch(function (err) {
       $('status').textContent = 'Could not load a photo: ' + err.message;
@@ -163,7 +195,11 @@
   window.__exportCover = function (sizeKey) {
     var keep = state.sizeKey;
     if (sizeKey) state.sizeKey = sizeKey;
-    return VC.exportPNG(state).then(function (blob) {
+    var opts = {
+      photos: state.photos, caption: state.caption, sub: state.sub,
+      grade: state.grade, sizeKey: state.sizeKey, panelTweaks: state.panelTweaks,
+    };
+    return VC.exportPNG(opts).then(function (blob) {
       state.sizeKey = keep;
       render();
       return new Promise(function (resolve) {
@@ -174,19 +210,29 @@
     });
   };
   window.__setState = function (patch) {
-    Object.assign(state, patch);
-    if (patch.heroTweaks) state.heroTweaks = Object.assign({}, state.heroTweaks, patch.heroTweaks);
+    if (patch.photos !== undefined) state.photos = patch.photos;
+    if (patch.photoNames !== undefined) state.photoNames = patch.photoNames;
+    if (patch.caption !== undefined) state.caption = patch.caption;
+    if (patch.sub !== undefined) state.sub = patch.sub;
+    if (patch.grade !== undefined) state.grade = patch.grade;
+    if (patch.sizeKey !== undefined) state.sizeKey = patch.sizeKey;
+    if (patch.selectedCell !== undefined) state.selectedCell = patch.selectedCell;
+    if (patch.panelTweaks !== undefined) state.panelTweaks = patch.panelTweaks;
     if (patch.grade !== undefined) $('grade').value = patch.grade;
     if (patch.sizeKey !== undefined) $('size').value = patch.sizeKey;
     if (patch.caption !== undefined) $('caption').value = patch.caption;
     if (patch.sub !== undefined) $('sub').value = patch.sub;
-    if (patch.heroTweaks) {
-      $('fx').value = state.heroTweaks.fx;
-      $('fy').value = state.heroTweaks.fy;
-      $('zoom').value = state.heroTweaks.zoom;
-    }
     render();
     return true;
+  };
+  window.__selectPanel = function (idx) {
+    var cells = layout();
+    if (idx >= 0 && idx < cells.length && cells[idx].type === 'photo') {
+      state.selectedCell = idx;
+      render();
+      return true;
+    }
+    return false;
   };
   window.__state = state;
 
@@ -199,18 +245,38 @@
     render();
   });
   $('grade').addEventListener('change', function (e) { state.grade = e.target.value; render(); });
-  $('size').addEventListener('change', function (e) { state.sizeKey = e.target.value; state.panelTweaks = []; render(); });
-  $('fx').addEventListener('input', function (e) { state.heroTweaks.fx = +e.target.value; render(); });
-  $('fy').addEventListener('input', function (e) { state.heroTweaks.fy = +e.target.value; render(); });
-  $('zoom').addEventListener('input', function (e) { state.heroTweaks.zoom = +e.target.value; render(); });
+  $('size').addEventListener('change', function (e) {
+    state.sizeKey = e.target.value; state.panelTweaks = []; state.selectedCell = 0; render();
+  });
+  $('fx').addEventListener('input', function (e) { var t = selectedTweak(); if (t) { t.fx = +e.target.value; render(); } });
+  $('fy').addEventListener('input', function (e) { var t = selectedTweak(); if (t) { t.fy = +e.target.value; render(); } });
+  $('zoom').addEventListener('input', function (e) { var t = selectedTweak(); if (t) { t.zoom = +e.target.value; render(); } });
+  $('flipBtn').addEventListener('click', function () {
+    var t = selectedTweak();
+    if (t) { t.flip = !t.flip; render(); }
+  });
   $('shuffleBtn').addEventListener('click', shuffleCrops);
   $('clearBtn').addEventListener('click', function () {
     state.photos = []; state.photoNames = []; state.panelTweaks = [];
+    state.selectedCell = 0;
     $('files').value = '';
     render();
   });
   $('files').addEventListener('change', function (e) { addFiles(e.target.files); });
   $('bigUpload').addEventListener('click', function () { $('files').click(); });
+
+  // Click a panel in the preview to select it for cropping / flipping.
+  canvas.addEventListener('click', function (e) {
+    if (!state.photos.length) return;
+    var rect = canvas.getBoundingClientRect();
+    var px = (e.clientX - rect.left) * canvas.width / rect.width;
+    var py = (e.clientY - rect.top) * canvas.height / rect.height;
+    var idx = VC.cellAt(state.sizeKey, state.photos.length, px, py);
+    if (idx >= 0 && layout()[idx].type === 'photo') {
+      state.selectedCell = idx;
+      render();
+    }
+  });
 
   // Drag-and-drop upload onto the preview stage.
   var stage = $('stage');
@@ -223,7 +289,11 @@
   stage.addEventListener('drop', function (e) { addFiles(e.dataTransfer.files); });
 
   $('exportBtn').addEventListener('click', function () {
-    VC.exportPNG(state).then(function (blob) {
+    var opts = {
+      photos: state.photos, caption: state.caption, sub: state.sub,
+      grade: state.grade, sizeKey: state.sizeKey, panelTweaks: state.panelTweaks,
+    };
+    VC.exportPNG(opts).then(function (blob) {
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'cover-' + state.sizeKey + '.png';

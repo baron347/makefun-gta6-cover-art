@@ -1,45 +1,260 @@
-/* Vice City Cover Maker — styles. Fonts are bundled woff2 files (SIL OFL);
-   the app makes no network request, so everything here is local. */
-@font-face { font-family: 'Anton'; src: url('fonts/Anton.woff2') format('woff2'); font-display: swap; }
-@font-face { font-family: 'Archivo Black'; src: url('fonts/ArchivoBlack.woff2') format('woff2'); font-display: swap; }
-@font-face { font-family: 'Bebas Neue'; src: url('fonts/BebasNeue.woff2') format('woff2'); font-display: swap; }
-
+/* Vice City Cover Maker — UI. Deep Vice City blue, sunset pink accent. */
 * { box-sizing: border-box; }
-body { margin: 0; background: #16042b; color: #fff; font-family: system-ui, -apple-system, sans-serif; }
-header { padding: 16px 20px; background: linear-gradient(90deg, #ff7a1a, #ff2d78, #5b14b8); }
-header h1 { margin: 0; font-family: 'Archivo Black', 'Anton', sans-serif; letter-spacing: 1px; font-size: 26px; }
-header p { margin: 4px 0 0; opacity: .92; font-size: 13px; }
-.wrap { display: flex; gap: 18px; padding: 18px 20px; align-items: flex-start; flex-wrap: wrap; }
-.stage { flex: 1; min-width: 320px; position: relative; }
-#preview { width: 100%; max-width: 640px; background: #fff; display: block; border-radius: 4px; cursor: crosshair; }
-#preview.dragging { outline: 4px dashed #ff2d78; outline-offset: 6px; }
-.empty { position: absolute; inset: 0; max-width: 640px; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; text-align: center; gap: 10px;
-  background: rgba(22, 4, 43, 0.88); border-radius: 4px; padding: 24px; }
-.empty.hidden { display: none; }
-.empty h2 { margin: 0; font-family: 'Anton', sans-serif; font-size: 30px; letter-spacing: 1px; }
-.empty p { margin: 0; font-size: 14px; opacity: .9; max-width: 420px; line-height: 1.5; }
-.empty .tips { font-size: 13px; opacity: .75; }
-.big-upload { background: #ff2d78; color: #fff; font-size: 17px; padding: 14px 26px; }
-.panel { width: 320px; background: #241040; border: 1px solid #4a2a7a; border-radius: 10px; padding: 14px; }
-.panel label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: .85; margin: 12px 0 4px; }
-.panel label:first-child { margin-top: 0; }
-.panel input[type=text], .panel select { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #4a2a7a; background: #16042b; color: #fff; font-size: 14px; }
-.panel input[type=range] { width: 100%; accent-color: #ff2d78; }
-.panel input[type=file] { width: 100%; font-size: 13px; }
-.row { display: flex; gap: 8px; }
-.row button { flex: 1; }
-button { cursor: pointer; border: 0; border-radius: 8px; padding: 10px 14px; font-weight: 700; font-size: 14px; }
-button:disabled { opacity: .45; cursor: default; }
-#exportBtn { width: 100%; background: #ff2d78; color: #fff; margin-top: 14px; }
-#shuffleBtn, #flipBtn, #clearBtn { background: #3a1a66; color: #fff; }
-#status { font-size: 12px; opacity: .85; margin-top: 10px; line-height: 1.5; }
-.thumbs { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-.thumbs figure { margin: 0; position: relative; }
-.thumbs img { width: 88px; height: 66px; object-fit: cover; border-radius: 6px; border: 2px solid #4a2a7a; display: block; }
-.thumbs figcaption { font-size: 10px; opacity: .8; text-align: center; margin-top: 2px; }
-.thumbs button { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; padding: 0;
-  border-radius: 50%; background: #ff2d78; color: #fff; font-size: 12px; line-height: 20px; }
-.hint { font-size: 12px; opacity: .7; line-height: 1.5; margin-top: 12px; }
-footer { padding: 0 20px 20px; font-size: 12px; opacity: .65; line-height: 1.6; }
-footer a { color: #ffd76a; }
+
+body {
+  margin: 0;
+  background: #16042b;
+  color: #f4ecff;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.45;
+}
+
+.top {
+  padding: 28px 24px 8px;
+  text-align: center;
+}
+
+.top h1 {
+  margin: 0;
+  font-family: "Archivo Black", system-ui, sans-serif;
+  font-size: clamp(26px, 4vw, 42px);
+  letter-spacing: 0.04em;
+  color: #ffffff;
+}
+
+.top h1 span {
+  color: #ff2d78;
+}
+
+.tagline {
+  margin: 8px auto 0;
+  max-width: 640px;
+  color: #cdb8ea;
+  font-size: 15px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 20px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 20px 24px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+}
+
+.stage { min-width: 0; }
+
+.preview-wrap {
+  position: relative;
+  background: #1f0a3d;
+  border: 2px solid #3d0a6e;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.preview-wrap.drag {
+  border-color: #ff2d78;
+  outline: 3px dashed rgba(255, 45, 120, 0.6);
+  outline-offset: -8px;
+}
+
+#preview {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: crosshair;
+}
+
+.empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(22, 4, 43, 0.72);
+  padding: 20px;
+}
+
+.empty-inner {
+  text-align: center;
+  max-width: 440px;
+}
+
+.empty-badge {
+  width: 74px;
+  height: 74px;
+  margin: 0 auto 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff7a1a, #ff2d78 55%, #7a1fd0);
+  font-family: "Anton", sans-serif;
+  font-size: 34px;
+  color: #ffffff;
+}
+
+.empty-inner h2 {
+  margin: 0 0 6px;
+  font-family: "Archivo Black", sans-serif;
+  font-size: 22px;
+}
+
+.empty-inner p { margin: 6px 0; color: #cdb8ea; }
+
+.drop-hint { font-size: 13px; }
+
+.tips {
+  text-align: left;
+  margin: 14px 0 0;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  font-size: 13px;
+  color: #e6d9f7;
+}
+
+.tips li { margin: 4px 0; }
+
+.selected-line {
+  margin: 10px 2px 0;
+  font-size: 13px;
+  color: #cdb8ea;
+}
+
+.panel {
+  background: #221040;
+  border: 1px solid #3d0a6e;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.group-label {
+  display: block;
+  margin-bottom: 6px;
+  font-family: "Archivo Black", sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ff8fb8;
+}
+
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.btn {
+  border: 1px solid #5b14b8;
+  background: #2a1245;
+  color: #f4ecff;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn:hover { border-color: #ff2d78; }
+.btn:disabled { opacity: 0.4; cursor: default; }
+
+.btn.primary {
+  background: #ff2d78;
+  border-color: #ff2d78;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.btn.primary:hover { background: #e01e68; }
+
+.btn.big { padding: 13px 26px; font-size: 16px; }
+
+.btn.export {
+  width: 100%;
+  text-align: left;
+  background: #16042b;
+  border-color: #7a1fd0;
+  font-weight: 600;
+}
+
+.export-col { display: flex; flex-direction: column; gap: 8px; }
+
+input[type="text"] {
+  width: 100%;
+  background: #16042b;
+  border: 1px solid #5b14b8;
+  border-radius: 8px;
+  color: #ffffff;
+  padding: 9px 12px;
+  font-size: 15px;
+  font-family: "Anton", sans-serif;
+  letter-spacing: 0.05em;
+}
+
+input[type="text"]:focus { outline: 2px solid #ff2d78; }
+
+.seg { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.seg button {
+  flex: 1 1 auto;
+  border: 1px solid #5b14b8;
+  background: #16042b;
+  color: #cdb8ea;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.seg button.active {
+  background: #ff2d78;
+  border-color: #ff2d78;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.slider-row {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  font-size: 13px;
+}
+
+.slider-row output { text-align: right; color: #ff8fb8; }
+
+input[type="range"] { width: 100%; accent-color: #ff2d78; }
+
+.count { margin: 8px 0 0; font-size: 13px; color: #cdb8ea; }
+
+.thumbs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+.thumb {
+  background: #16042b;
+  border: 1px solid #5b14b8;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 12px;
+  color: #e6d9f7;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hint { margin: 8px 0 0; font-size: 12.5px; color: #a98fc9; }
+
+.foot {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px 28px;
+  font-size: 12.5px;
+  color: #a98fc9;
+  text-align: center;
+}

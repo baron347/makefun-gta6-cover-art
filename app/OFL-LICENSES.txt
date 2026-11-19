@@ -1,0 +1,31 @@
+Font attributions — Vice City Cover Maker (app/fonts/)
+=============================================================
+
+All fonts in app/fonts/ are licensed under the SIL Open Font License,
+Version 1.1 (see https://scripts.sil.org/OFL). They are bundled as woff2
+files so the app works fully offline; no font is loaded from the network.
+
+- Anton (app/fonts/Anton.woff2)
+  Copyright (c) 2011, Vernon Adams (vern@newtypography.co.uk), with Reserved
+  Font Name "Anton". Designed by Vernon Adams. SIL Open Font License 1.1.
+  Used for the big cover caption and the "VI" graphic panel.
+
+- Bebas Neue (app/fonts/BebasNeue.woff2)
+  Copyright (c) 2010, 2019, Ryoichi Tsunekawa (Dharma Type).
+  SIL Open Font License 1.1.
+  Used for the subtitle / letter-spaced labels under the caption.
+
+- Archivo Black (app/fonts/ArchivoBlack.woff2)
+  Copyright (c) 2012, Omnibus-Type (www.omnibus-type.com), with Reserved
+  Font Name "Archivo". SIL Open Font License 1.1.
+  Used for the app header.
+
+SIL Open Font License, Version 1.1 — summary
+----------------------------------------------
+Permission is granted, free of charge, to use, study, copy, merge, embed,
+modify, redistribute, and sell modified and unmodified copies of the Font
+Software, subject to the conditions in the full license text at
+https://scripts.sil.org/OFL (notably: the fonts must not be sold on their
+own, and any modified version must not use the Reserved Font Names above
+without written permission). The fonts are provided "as is", without
+warranty of any kind.

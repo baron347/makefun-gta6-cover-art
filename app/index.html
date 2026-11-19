@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vice City Cover Maker — GTA-style poster covers from your photos</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>VICE CITY COVER MAKER</h1>
+  <p>Turn your photos + a caption into a multi-panel poster cover — Vice City sunset or neon. Your photos never leave this machine.</p>
+</header>
+<div class="wrap">
+  <div class="stage" id="stage">
+    <canvas id="preview" width="1080" height="1080" aria-label="Cover preview"></canvas>
+    <div class="empty" id="empty">
+      <h2>MAKE YOUR COVER</h2>
+      <p>Drop 1–3 of your own photos here, or pick them from your machine. The app builds a multi-panel poster around your caption — no upload, no account.</p>
+      <button class="big-upload" id="bigUpload" type="button">Upload photos</button>
+      <p class="tips">Tip: upload 2–3 photos with different moods for the richest cover — a portrait, a street or night shot, and a skyline or beach. One photo works too: the app adds drawn graphic panels so it never looks like a contact sheet.</p>
+    </div>
+    <div class="thumbs" id="thumbs"></div>
+  </div>
+  <div class="panel">
+    <label>Photos (your own)</label>
+    <input type="file" id="files" accept="image/*" multiple>
+    <label>Caption (big title)</label>
+    <input type="text" id="caption" value="VICE CITY" maxlength="24">
+    <label>Subtitle</label>
+    <input type="text" id="sub" value="LEONIDA • 2026" maxlength="40">
+    <label>Colour grade</label>
+    <select id="grade">
+      <option value="sunset">Vice Sunset — warm pink / orange</option>
+      <option value="neon">Neon Night — purple / cyan</option>
+      <option value="original">Original — no grade</option>
+    </select>
+    <label>Export size</label>
+    <select id="size">
+      <option value="1080x1080">1080 × 1080 (square post)</option>
+      <option value="1080x1350">1080 × 1350 (portrait post)</option>
+      <option value="1920x1080">1920 × 1080 (wide post)</option>
+    </select>
+    <label>Hero panel — focal X <span id="fxv">0.50</span></label>
+    <input type="range" id="fx" min="0" max="1" step="0.01" value="0.5">
+    <label>Hero panel — focal Y <span id="fyv">0.30</span></label>
+    <input type="range" id="fy" min="0" max="1" step="0.01" value="0.3">
+    <label>Hero panel — zoom <span id="zv">1.15</span></label>
+    <input type="range" id="zoom" min="1" max="2.2" step="0.05" value="1.15">
+    <div class="row" style="margin-top:14px">
+      <button id="shuffleBtn" type="button">Shuffle crops</button>
+      <button id="clearBtn" type="button">Clear photos</button>
+    </div>
+    <button id="exportBtn" type="button">Export PNG</button>
+    <div id="status">No photos yet — upload some to build your cover.</div>
+    <p class="hint">Shuffle crops re-rolls the focal point and zoom of <b>every</b> panel, not just the hero. Drag photos onto the preview to add more. Export downloads a PNG at the exact size above.</p>
+  </div>
+</div>
+<footer>
+  An original fan-style poster maker — not affiliated with or endorsed by Rockstar Games, and it uses no Rockstar logo, artwork, or font. Fonts Anton, Bebas Neue and Archivo Black are licensed under the SIL Open Font License (see app/OFL-LICENSES.txt). Photos are read on your own machine and never uploaded.
+</footer>
+<script src="cover.js"></script>
+<script>
+// Classic script (no ES modules — modules are blocked from file:// by CORS,
+// and this app must open straight from file:// in desktop Chrome).
+(function () {
+  var VC = window.ViceCover;
+  var $ = function (id) { return document.getElementById(id); };
+  var state = {
+    photos: [],          // HTMLImageElements, in upload order
+    photoNames: [],      // display names, parallel to photos
+    caption: 'VICE CITY',
+    sub: 'LEONIDA • 2026',
+    grade: 'sunset',
+    sizeKey: '1080x1080',
+    heroTweaks: { fx: 0.5, fy: 0.3, zoom: 1.15 },
+    panelTweaks: [],     // per layout cell {fx, fy, zoom}; Shuffle fills this
+  };
+  var canvas = $('preview');
+
+  function render() {
+    $('fxv').textContent = state.heroTweaks.fx.toFixed(2);
+    $('fyv').textContent = state.heroTweaks.fy.toFixed(2);
+    $('zv').textContent = state.heroTweaks.zoom.toFixed(2);
+    $('empty').classList.toggle('hidden', state.photos.length > 0);
+    $('exportBtn').disabled = state.photos.length === 0;
+    $('shuffleBtn').disabled = state.photos.length === 0;
+    VC.renderCover(canvas, state);
+    $('status').textContent = state.photos.length
+      ? 'Rendered ' + state.sizeKey + ' · grade ' + state.grade + ' · ' + state.photos.length + ' photo(s)'
+      : 'No photos yet — upload some to build your cover.';
+    renderThumbs();
+  }
+
+  function renderThumbs() {
+    var box = $('thumbs');
+    box.innerHTML = '';
+    state.photos.forEach(function (img, i) {
+      var fig = document.createElement('figure');
+      var thumb = document.createElement('img');
+      thumb.src = img.src;
+      thumb.alt = state.photoNames[i] || ('photo ' + (i + 1));
+      var cap = document.createElement('figcaption');
+      cap.textContent = (state.photoNames[i] || ('photo ' + (i + 1))).slice(0, 18);
+      var rm = document.createElement('button');
+      rm.type = 'button';
+      rm.textContent = '×';
+      rm.title = 'Remove this photo';
+      rm.setAttribute('aria-label', 'Remove photo ' + (i + 1));
+      rm.addEventListener('click', function () {
+        state.photos.splice(i, 1);
+        state.photoNames.splice(i, 1);
+        state.panelTweaks = [];
+        render();
+      });
+      fig.appendChild(thumb);
+      fig.appendChild(cap);
+      fig.appendChild(rm);
+      box.appendChild(fig);
+    });
+  }
+
+  // Shuffle crops: re-roll focal point + zoom for EVERY photo panel.
+  function shuffleCrops() {
+    var layout = VC.layoutFor(state.sizeKey, state.photos.length);
+    state.panelTweaks = layout.map(function (cell) {
+      if (cell.type !== 'photo') return null;
+      return {
+        fx: 0.2 + Math.random() * 0.6,
+        fy: 0.2 + Math.random() * 0.6,
+        zoom: 1.0 + Math.random() * 0.9,
+      };
+    });
+    // Keep the hero sliders in sync with the first panel's new crop.
+    var first = state.panelTweaks[0];
+    if (first) {
+      state.heroTweaks = { fx: first.fx, fy: first.fy, zoom: first.zoom };
+      $('fx').value = first.fx;
+      $('fy').value = first.fy;
+      $('zoom').value = first.zoom;
+    }
+    render();
+  }
+
+  function addFiles(files) {
+    var list = Array.prototype.slice.call(files || []);
+    if (!list.length) return Promise.resolve();
+    return Promise.all(list.map(function (f) {
+      return VC.loadImage(URL.createObjectURL(f)).then(function (img) {
+        state.photos.push(img);
+        state.photoNames.push(f.name || 'photo');
+      });
+    })).then(function () {
+      state.panelTweaks = [];
+      render();
+    }).catch(function (err) {
+      $('status').textContent = 'Could not load a photo: ' + err.message;
+    });
+  }
+
+  // Test / automation hooks (also used by the headless screenshot script).
+  window.__exportCover = function (sizeKey) {
+    var keep = state.sizeKey;
+    if (sizeKey) state.sizeKey = sizeKey;
+    return VC.exportPNG(state).then(function (blob) {
+      state.sizeKey = keep;
+      render();
+      return new Promise(function (resolve) {
+        var r = new FileReader();
+        r.onload = function () { resolve({ dataUrl: r.result, size: blob.size, type: blob.type }); };
+        r.readAsDataURL(blob);
+      });
+    });
+  };
+  window.__setState = function (patch) {
+    Object.assign(state, patch);
+    if (patch.heroTweaks) state.heroTweaks = Object.assign({}, state.heroTweaks, patch.heroTweaks);
+    if (patch.grade !== undefined) $('grade').value = patch.grade;
+    if (patch.sizeKey !== undefined) $('size').value = patch.sizeKey;
+    if (patch.caption !== undefined) $('caption').value = patch.caption;
+    if (patch.sub !== undefined) $('sub').value = patch.sub;
+    if (patch.heroTweaks) {
+      $('fx').value = state.heroTweaks.fx;
+      $('fy').value = state.heroTweaks.fy;
+      $('zoom').value = state.heroTweaks.zoom;
+    }
+    render();
+    return true;
+  };
+  window.__state = state;
+
+  $('caption').addEventListener('input', function (e) {
+    state.caption = e.target.value.toUpperCase();
+    render();
+  });
+  $('sub').addEventListener('input', function (e) {
+    state.sub = e.target.value.toUpperCase();
+    render();
+  });
+  $('grade').addEventListener('change', function (e) { state.grade = e.target.value; render(); });
+  $('size').addEventListener('change', function (e) { state.sizeKey = e.target.value; state.panelTweaks = []; render(); });
+  $('fx').addEventListener('input', function (e) { state.heroTweaks.fx = +e.target.value; render(); });
+  $('fy').addEventListener('input', function (e) { state.heroTweaks.fy = +e.target.value; render(); });
+  $('zoom').addEventListener('input', function (e) { state.heroTweaks.zoom = +e.target.value; render(); });
+  $('shuffleBtn').addEventListener('click', shuffleCrops);
+  $('clearBtn').addEventListener('click', function () {
+    state.photos = []; state.photoNames = []; state.panelTweaks = [];
+    $('files').value = '';
+    render();
+  });
+  $('files').addEventListener('change', function (e) { addFiles(e.target.files); });
+  $('bigUpload').addEventListener('click', function () { $('files').click(); });
+
+  // Drag-and-drop upload onto the preview stage.
+  var stage = $('stage');
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    stage.addEventListener(ev, function (e) { e.preventDefault(); $('preview').classList.add('dragging'); });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    stage.addEventListener(ev, function (e) { e.preventDefault(); $('preview').classList.remove('dragging'); });
+  });
+  stage.addEventListener('drop', function (e) { addFiles(e.dataTransfer.files); });
+
+  $('exportBtn').addEventListener('click', function () {
+    VC.exportPNG(state).then(function (blob) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'cover-' + state.sizeKey + '.png';
+      a.click();
+      $('status').textContent = 'Exported PNG ' + (blob.size / 1024).toFixed(0) + ' KB · ' + state.sizeKey;
+    });
+  });
+
+  // Fonts must be ready before the first render, or the title falls back.
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(render);
+  }
+  render();
+})();
+</script>
+</body>
+</html>

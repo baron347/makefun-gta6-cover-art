@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VICE CITY — Cover Art Studio (Offline)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">VC</span>
+    <div>
+      <h1>VICE CITY <span>Cover Art Studio</span></h1>
+      <p class="tagline">Ubah fotomu jadi poster gaya GTA — 100% offline, fotomu tidak pernah keluar dari mesin ini.</p>
+    </div>
+  </div>
+  <div class="top-actions">
+    <label class="size-label" for="previewSize">Pratinjau</label>
+    <select id="previewSize">
+      <option value="1080x1080">Persegi · 1080 × 1080</option>
+      <option value="1080x1350">Potret · 1080 × 1350</option>
+      <option value="1920x1080" selected>Lanskap · 1920 × 1080</option>
+    </select>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="controls" aria-label="Kontrol cover">
+    <div class="card">
+      <h2>1 · Foto</h2>
+      <p class="hint">Seret foto ke kanvas, atau pilih dari perangkat. Bisa beberapa foto — tiap panel bisa pakai foto berbeda.</p>
+      <label class="file-btn" for="photoInput">+ Tambah Foto</label>
+      <input id="photoInput" type="file" accept="image/*" multiple hidden>
+      <div class="row">
+        <button id="sampleBtn" type="button" class="btn ghost">Pakai Scene Contoh</button>
+        <button id="clearPhotosBtn" type="button" class="btn ghost">Hapus Foto</button>
+      </div>
+      <div id="photoThumbs" class="thumbs" aria-label="Foto yang dimuat"></div>
+      <p class="hint small">Klik sebuah panel di pratinjau untuk memilihnya, lalu atur foto, zoom, dan posisinya di bawah.</p>
+    </div>
+
+    <div class="card">
+      <h2>2 · Panel &amp; Layout</h2>
+      <div class="field">
+        <label for="layoutSelect">Layout panel</label>
+        <select id="layoutSelect">
+          <option value="grid" selected>Grid 2 × 2 — poster klasik</option>
+          <option value="hero">Hero + 3 panel</option>
+          <option value="trio">Trio vertikal</option>
+          <option value="single">Single hero full-bleed</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="panelPhoto">Foto panel terpilih (<span id="panelName">Panel 1</span>)</label>
+        <select id="panelPhoto"></select>
+      </div>
+      <div class="field">
+        <label for="zoomRange">Zoom panel <output id="zoomOut">100%</output></label>
+        <input id="zoomRange" type="range" min="100" max="260" value="100">
+      </div>
+      <div class="field">
+        <label for="offsetXRange">Geser horizontal <output id="offsetXOut">0</output></label>
+        <input id="offsetXRange" type="range" min="-100" max="100" value="0">
+      </div>
+      <div class="field">
+        <label for="offsetYRange">Geser vertikal <output id="offsetYOut">0</output></label>
+        <input id="offsetYRange" type="range" min="-100" max="100" value="0">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>3 · Judul &amp; Caption</h2>
+      <div class="field">
+        <label for="titleInput">Judul besar</label>
+        <input id="titleInput" type="text" value="VICE CITY" maxlength="24" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="subtitleInput">Caption / subjudul</label>
+        <input id="subtitleInput" type="text" value="Welcome to the neon coast." maxlength="80" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="badgeInput">Lencana kecil</label>
+        <input id="badgeInput" type="text" value="EST. 2026 • SUNSET EDITION" maxlength="40" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="titleSizeRange">Ukuran judul <output id="titleSizeOut">100%</output></label>
+        <input id="titleSizeRange" type="range" min="70" max="140" value="100">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>4 · Grading &amp; Filter</h2>
+      <div class="grade-row" role="group" aria-label="Preset grading">
+        <button type="button" class="grade-btn active" data-grade="sunset">🌇 Sunset</button>
+        <button type="button" class="grade-btn" data-grade="neon">🌃 Neon Night</button>
+        <button type="button" class="grade-btn" data-grade="pastel">🌸 Pastel Vice</button>
+      </div>
+      <div class="field">
+        <label for="saturationRange">Saturasi <output id="saturationOut">120%</output></label>
+        <input id="saturationRange" type="range" min="50" max="200" value="120">
+      </div>
+      <div class="field">
+        <label for="contrastRange">Kontras <output id="contrastOut">110%</output></label>
+        <input id="contrastRange" type="range" min="70" max="160" value="110">
+      </div>
+      <div class="field">
+        <label for="brightnessRange">Kecerahan <output id="brightnessOut">100%</output></label>
+        <input id="brightnessRange" type="range" min="70" max="140" value="100">
+      </div>
+      <div class="field checkbox">
+        <label><input id="grainToggle" type="checkbox" checked> Grain film + vignette</label>
+        <label><input id="frameToggle" type="checkbox" checked> Bingkai poster putih</label>
+      </div>
+    </div>
+
+    <div class="card export-card">
+      <h2>5 · Export PNG</h2>
+      <p class="hint">Ukuran exact, siap posting. Semua render lokal di kanvas.</p>
+      <div class="export-grid">
+        <button id="exportSquare" type="button" class="btn primary">1080 × 1080</button>
+        <button id="exportPortrait" type="button" class="btn primary">1080 × 1350</button>
+        <button id="exportWide" type="button" class="btn primary">1920 × 1080</button>
+      </div>
+      <button id="exportAllBtn" type="button" class="btn accent">⬇ Export Ketiganya</button>
+      <p id="exportStatus" class="status" role="status"></p>
+    </div>
+
+    <p class="privacy">🔒 Privasi: foto dibaca dengan FileReader di browsermu saja. Tidak ada upload, tidak ada fetch, tidak ada pelacak. Semua artwork latar (skyline, palem, matahari) digambar prosedural di kanvas — bukan aset game apa pun.</p>
+  </section>
+
+  <section class="stage" aria-label="Pratinjau cover">
+    <div id="dropZone" class="drop-zone">
+      <canvas id="previewCanvas" width="960" height="540"></canvas>
+      <p class="drop-hint">Seret foto ke sini · klik panel untuk memilihnya</p>
+    </div>
+    <div class="stage-foot">
+      <span id="stageInfo">Scene contoh aktif — tambah fotomu untuk mengganti panel.</span>
+      <button id="shuffleBtn" type="button" class="btn ghost small">🎲 Acak Susunan Panel</button>
+    </div>
+    <div id="selftest-result" aria-live="polite"></div>
+  </section>
+</main>
+
+<footer class="foot">
+  <p>VICE CITY Cover Art Studio — karya orisinal buatan penggemar, bukan produk resmi. Tidak berafiliasi dengan Rockstar Games. Tanpa logo, artwork, atau font resmi game apa pun. Font: stack sistem (Arial Black / Impact).</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

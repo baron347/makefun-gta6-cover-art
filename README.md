@@ -8,8 +8,9 @@ tanpa server, tanpa upload.
 
 ## Cara pakai
 
-1. Double-click `index.html` — app terbuka di desktop Chrome (juga jalan dari
-   `file://`, tanpa server sama sekali).
+1. Double-click `app/index.html` — app terbuka di desktop Chrome (juga jalan dari
+   `file://`, tanpa server sama sekali). Atau layani `app/` dengan server statis
+   apa pun untuk mencoba di browser.
 2. Tambah foto lewat tombol **+ Tambah Foto** atau seret foto ke area pratinjau.
    Bisa beberapa foto; tiap panel bisa pakai foto berbeda.
 3. Klik sebuah panel di pratinjau untuk memilihnya, lalu atur foto, zoom, dan
@@ -26,10 +27,16 @@ bisa dipakai dan diverifikasi tanpa upload foto apa pun.
 
 ## File
 
-- `index.html` — struktur app
-- `app.js` — semua logika: render cover, layout panel, grading, export, self-test
+- `main.ts` — entrypoint kompetisi (Node 22, stdlib saja): menyalin `app/` dan
+  `screenshots/` ke direktori output lalu menulis `dossier.json` di sana.
+  Jalankan: `mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts`
+- `vendor/makefun-app.ts` — library dossier vendored dari starter kit resmi
+- `app/index.html` — struktur app
+- `app/app.js` — semua logika: render cover, layout panel, grading, export, self-test
   (classic `<script>`, tanpa module, tanpa library eksternal)
-- `style.css` — tampilan editor
+- `app/style.css` — tampilan editor
+- `screenshots/` — 3 tangkapan layar app (JPEG, masing-masing ≤ 256 KiB);
+  `1-cover.jpg` adalah cover
 
 ## Privasi
 
@@ -39,7 +46,7 @@ pelacak, tidak ada cookie. Semua artwork latar digambar prosedural di kanvas.
 
 ## Self-test
 
-Buka `index.html?selftest=1` — app akan me-render ketiga ukuran export di memori
+Buka `app/index.html?selftest=1` — app akan me-render ketiga ukuran export di memori
 dan menulis hasilnya ke elemen `#selftest-result` dan ke `document.title`:
 
 - `SELFTEST PASS: OK 1080x1080 | OK 1080x1350 | OK 1920x1080`
